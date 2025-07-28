@@ -27,9 +27,6 @@ namespace OrderManagement.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var order = new Order
             {
                 CustomerId = dto.CustomerId,
@@ -42,12 +39,30 @@ namespace OrderManagement.Controllers
             };
 
             var newOrder = await _orderService.CreateOrderAsync(order);
+
             if (newOrder == null)
                 return BadRequest("Insufficient stock or invalid product.");
 
-            return Ok(newOrder);
-        }
+            var result = new OrderDto
+            {
+                OrderId = newOrder.OrderId,
+                OrderDate = newOrder.OrderDate,
+                TotalAmount = newOrder.TotalAmount,
+                PaymentMethod = newOrder.PaymentMethod,
+                Status = newOrder.Status,
+                OrderItems = newOrder.OrderItems.Select(i => new OrderItemDto
+                {
+                    OrderItemId = i.OrderItemId,
+                    ProductId = i.ProductId,
+                    ProductName = i.Product?.Name,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+                    Discount = i.Discount
+                }).ToList()
+            };
 
+            return Ok(result);
+        }
 
 
 
